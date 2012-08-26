@@ -285,8 +285,7 @@ if args.mode == 'pixelinvaders':
 	sock.bind( (args.UDP_IP,args.UDP_PORT) )
 	while True:
 		data, addr = sock.recvfrom( 1024 ) # buffer size is 1024 bytes blocking call
-		spidev.write(data)
-		spidev.flush()
+        send_data_to_spi(data)
 
 if args.mode == 'strip':
     # Create bytearray for the entire image
@@ -335,8 +334,7 @@ if args.mode == 'array':
         value = input_image[int(pixel_map[array_index][0]), int(pixel_map[array_index][1])]
 	pixel_output[(array_index * PIXEL_SIZE):] = filter_pixel(value[:], 1)
     print "Displaying..."
-    spidev.write(pixel_output)
-    spidev.flush()
+    send_data_to_spi(pixel_output)
 
 if args.mode == 'pan':
     print "Reading in array map"
@@ -356,23 +354,20 @@ if args.mode == 'pan':
 		    value = input_image[int(pixel_map[array_index][0]+ x_offset), int(pixel_map[array_index][1])]
 		pixel_output[(array_index * PIXEL_SIZE):] = filter_pixel(value[:], 1)
 		print "Displaying..."
-		spidev.write(pixel_output)
-		spidev.flush()
+        send_data_to_spi(pixel_output)
 		time.sleep((args.refresh_rate)/1000.0)
 
 if args.mode == 'all_off':
     pixel_output = bytearray(args.num_leds * PIXEL_SIZE + 3)
     print "Turning all LEDs Off"
-    spidev.write(pixel_output)
-    spidev.flush()
+    send_data_to_spi(pixel_output)    
 
 if args.mode == 'all_on':
     pixel_output = bytearray(args.num_leds * PIXEL_SIZE + 3)
     print "Turning all LEDs On"
     for led in range(args.num_leds):
         pixel_output[led*PIXEL_SIZE:] = filter_pixel(WHITE, 1)
-    spidev.write(pixel_output)
-    spidev.flush()
+    send_data_to_spi(pixel_output)
 
 if args.mode == 'fade':
     pixel_output = bytearray(args.num_leds * PIXEL_SIZE + 3)
@@ -384,16 +379,14 @@ if args.mode == 'fade':
             for brightness in [x*0.01 for x in range(0,100)]:
                 current_color[:] = filter_pixel(color[:], brightness)
                 for pixel_offset in [(x * 3) for x in range(args.num_leds)]:
-			pixel_output[pixel_offset:] = current_color[:]
-                spidev.write(pixel_output)
-                spidev.flush()
+			    pixel_output[pixel_offset:] = current_color[:]
+                send_data_to_spi(pixel_output)
                 time.sleep((args.refresh_rate)/1000.0)
             for brightness in [x*0.01 for x in range(100,0, -1)]:
                 current_color[:] = filter_pixel(color[:], brightness)
                 for pixel_offset in [(x * 3) for x in range(args.num_leds)]:
-			pixel_output[pixel_offset:] = current_color[:]
-                spidev.write(pixel_output)
-                spidev.flush()
+			    pixel_output[pixel_offset:] = current_color[:]
+                send_data_to_spi(pixel_output)
                 time.sleep((args.refresh_rate)/1000.0)
 
 
@@ -427,8 +420,7 @@ if args.mode == 'wiimote':
 
 	pixel_output[((pixel_index)*PIXEL_SIZE):] = filter_pixel(wii_color[:], 1)
 	pixel_output += '\x00'* ((args.num_leds+1-pixel_index)*PIXEL_SIZE)
-	spidev.write(pixel_output)
-	spidev.flush()
+	send_data_to_spi(pixel_output)
 	time.sleep(wii_move_timeout)
 
 
@@ -445,10 +437,13 @@ if args.mode == 'chase':
                 pixel_output[((pixel_index-1)*PIXEL_SIZE):] = filter_pixel(current_color[:],0.4) 
                 pixel_output[((pixel_index)*PIXEL_SIZE):] = filter_pixel(current_color[:], 1)
 		pixel_output += '\x00'* ((args.num_leds+1-pixel_index)*PIXEL_SIZE)
-                spidev.write(pixel_output)
-                spidev.flush()
+                send_data_to_spi(pixel_output)
                 time.sleep((args.refresh_rate)/1000.0)
                 pixel_output[((pixel_index-2)*PIXEL_SIZE):] = filter_pixel(current_color[:], 0)
+
+def send_data_to_spi(pixel_output)_device:
+                spidev.write(pixel_output)
+                spidev.flush()
 
 def print_state(state):
 	print 'Report Mode:',
