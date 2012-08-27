@@ -1,8 +1,11 @@
 import sys
 import RPi.GPIO as GPIO
 import time
+import sched
 import argparse
 import socket
+
+# TODO close spi device if app exits
 
 #3 bytes per pixel
 PIXEL_SIZE = 3
@@ -33,8 +36,8 @@ parser.add_argument('--chip',
         action='store',
         dest='chip_type',
         default='WS2801',
-        choices=['WS2801', 'LDP8806'],
-        help='Specify chip type LDP8806 or WS2801')
+        choices=['WS2801', 'LDP8806', 'LPD6803'],
+        help='Specify chip type LDP8806, LPD6803 or WS2801')
 parser.add_argument('--mode',
         action='store',
         dest='mode',
@@ -113,14 +116,22 @@ if args.chip_type == "WS2801":
     for i in range(256):
         gamma[i] = int(pow(float(i) / 255.0, 2.5) * 255.0 )
 
+if args.chip_type == "LPD6803":
+	print "Start LPD6803 callback"
+	new_timed_call(3, p, '3') 
+	scheduler.run()
+
 if args.mode == 'pixelinvaders':
-	print ("Start PixelInvaders listener at "+args.UDP_IP+":"+str(args.UDP_PORT))
-	sock = socket.socket( socket.AF_INET, # Internet
-                      socket.SOCK_DGRAM ) # UDP
-	sock.bind( (args.UDP_IP,args.UDP_PORT) )
-	while True:
-		data, addr = sock.recvfrom( 1024 ) # buffer size is 1024 bytes blocking call
-        send_data_to_spi(data)
+	try:
+		print ("Start PixelInvaders listener at "+args.UDP_IP+":"+str(args.UDP_PORT))
+		sock = socket.socket( socket.AF_INET, # Internet
+                	      socket.SOCK_DGRAM ) # UDP
+		sock.bind( (args.UDP_IP,args.UDP_PORT) )
+		while True:
+			data, addr = sock.recvfrom( 1024 ) # buffer size is 1024 bytes blocking call
+		send_data_to_spi(data)
+	except:
+		print "PixelInvaders exit"
 
 if args.mode == 'all_off':
     pixel_output = bytearray(args.num_leds * PIXEL_SIZE + 3)
@@ -138,3 +149,41 @@ def send_data_to_spi(pixel_output):
                 spidev.write(pixel_output)
                 spidev.flush()
 
+scheduler = sched.scheduler(time.time, time.sleep)
+
+# callback
+def new_timed_call(calls_per_second, callback, *args, **kw):
+    period = 1.0 / calls_per_second
+    def reload():
+        callback(*args, **kw)
+        scheduler.enter(period, 0, reload, ())
+    scheduler.enter(period, 0, reload, ())
+
+# isr 
+def lp6803_isr():
+	if (nState==1): 
+		# check update color, make sure the data has been validated 
+		if (isDirty==1): # must we update the pixel value
+			spidev.write(0)
+			spidev.flush()
+#			indx = 0
+#			pixelDataCurrent = pixelData; //reset index
+#			nState = 0
+#      			isDirty = 0
+      			return
+
+		#just send out zeros all the time, used to validate updates and prepare updates
+		spidev.write(0)
+		spidev.flush()
+		return
+	else:
+		#feed out pixelbuffer
+		#First shift in 32bit 0 as start frame, then shift in all data frame, start
+		#frame and data frame both are shift by high-bit, every data is input on DCLK rising edge
+
+		spidev.write(0)
+		spidev.flush()
+#		if(indx++ >= prettyUglyCopyOfNumPixels):
+#			nState = 1
+		
+		return;
