@@ -1,4 +1,4 @@
-import cwiid
+#import cwiid
 import sys
 import RPi.GPIO as GPIO
 import Image
@@ -355,7 +355,7 @@ if args.mode == 'pan':
 		pixel_output[(array_index * PIXEL_SIZE):] = filter_pixel(value[:], 1)
 		print "Displaying..."
         send_data_to_spi(pixel_output)
-		time.sleep((args.refresh_rate)/1000.0)
+	time.sleep((args.refresh_rate)/1000.0)
 
 if args.mode == 'all_off':
     pixel_output = bytearray(args.num_leds * PIXEL_SIZE + 3)
@@ -441,7 +441,7 @@ if args.mode == 'chase':
                 time.sleep((args.refresh_rate)/1000.0)
                 pixel_output[((pixel_index-2)*PIXEL_SIZE):] = filter_pixel(current_color[:], 0)
 
-def send_data_to_spi(pixel_output)_device:
+def send_data_to_spi(pixel_output):
                 spidev.write(pixel_output)
                 spidev.flush()
 
